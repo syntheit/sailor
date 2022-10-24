@@ -66,10 +66,62 @@ int main(int argc, char *argv[]) {
 
   // sailor update -c <container_name>
   if (command == "update") {
-    std::cout << "Updating " << flags.at("c") << "\n";
-  }
-
-  else if (command == "debug") {
+    std::string containerName = flags.at("c");
+    if (containers.count(containerName) == 1) {
+      std::cout << "Updating " << flags.at("c") << "\n";
+      containers.at(containerName).update();
+    } else if (containers.count(containerName) <= 0)
+      std::cout << "Container " << containerName
+                << " is not configured.  Check sailor.json";
+    else if (containers.count(containerName) > 1)
+      std::cout << "Container name " << containerName
+                << " has duplicates.  Check sailor.json";
+  } else if (command == "start") {
+    std::string containerName = flags.at("c");
+    if (containers.count(containerName) == 1) {
+      std::cout << "Starting " << flags.at("c") << "\n";
+      containers.at(containerName).start();
+    } else if (containers.count(containerName) <= 0)
+      std::cout << "Container " << containerName
+                << " is not configured.  Check sailor.json";
+    else if (containers.count(containerName) > 1)
+      std::cout << "Container name " << containerName
+                << " has duplicates.  Check sailor.json";
+  } else if (command == "stop") {
+    std::string containerName = flags.at("c");
+    if (containers.count(containerName) == 1) {
+      std::cout << "Stopping " << flags.at("c") << "\n";
+      containers.at(containerName).stop();
+    } else if (containers.count(containerName) <= 0)
+      std::cout << "Container " << containerName
+                << " is not configured.  Check sailor.json";
+    else if (containers.count(containerName) > 1)
+      std::cout << "Container name " << containerName
+                << " has duplicates.  Check sailor.json";
+  } else if (command == "restart") {
+    std::string containerName = flags.at("c");
+    if (containers.count(containerName) == 1) {
+      std::cout << "Restart " << flags.at("c") << "\n";
+      containers.at(containerName).restart();
+    } else if (containers.count(containerName) <= 0)
+      std::cout << "Container " << containerName
+                << " is not configured.  Check sailor.json";
+    else if (containers.count(containerName) > 1)
+      std::cout << "Container name " << containerName
+                << " has duplicates.  Check sailor.json";
+  } else if (command == "pull") {
+    // the container probably needs to be off before a pull
+    std::string containerName = flags.at("c");
+    if (containers.count(containerName) == 1) {
+      std::cout << "Pulling " << flags.at("c") << "\n";
+      containers.at(containerName).pull();
+    } else if (containers.count(containerName) <= 0)
+      std::cout << "Container " << containerName
+                << " is not configured.  Check sailor.json";
+    else if (containers.count(containerName) > 1)
+      std::cout << "Container name " << containerName
+                << " has duplicates.  Check sailor.json";
+  } else if (command == "debug") {
     std::cout << "Debug output: \n";
     std::cout << "\nConf: \n";
     for (std::map<std::string, std::string>::iterator it = conf.begin();

@@ -23,10 +23,11 @@ public:
   };
   void setDirName(std::string _dir_name) { dir_name = _dir_name; };
 
-  void start();
-  void stop();
-  void pull();
-  void update();
+  void start() const;
+  void stop() const;
+  void restart() const;
+  void pull() const;
+  void update() const;
 
 private:
   std::string name;

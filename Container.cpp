@@ -21,3 +21,31 @@ std::string Container::getPath() const {
   return flat ? compose_dir + "/" + compose_file_name
               : compose_dir + "/" + dir_name + "/" + compose_file_name;
 }
+
+// should all commands be run as sudo?  should this be an option in the config?
+
+void Container::start() const {
+  std::string command = "sudo docker-compose -f " + getPath() + " up -d";
+  system(command.c_str());
+}
+
+void Container::stop() const {
+  std::string command = "sudo docker-compose -f " + getPath() + " stop";
+  system(command.c_str());
+}
+
+void Container::restart() const {
+  stop();
+  start();
+}
+
+void Container::pull() const {
+  std::string command = "sudo docker-compose -f " + getPath() + " pull";
+  system(command.c_str());
+}
+
+void Container::update() const {
+  stop();
+  pull();
+  start();
+}
