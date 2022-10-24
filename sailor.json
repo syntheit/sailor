@@ -1,0 +1,17 @@
+{
+  "defaults": {
+    "compose_dir": "/Docker",
+    "compose_file_name": "docker-compose.yml"
+  },
+  "containers": [
+    {
+      "container_name": "nextcloud"
+    },
+    {
+      "container_name": "photoprism"
+    },
+    {
+      "container_name": "bookstack"
+    }
+  ]
+}
