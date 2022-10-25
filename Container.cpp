@@ -1,4 +1,4 @@
-#include "Container.h"
+#include "Container.hpp"
 
 Container::Container(std::map<std::string, std::string> &defaults) {
   setDefaults(defaults);
@@ -48,4 +48,20 @@ void Container::update() const {
   stop();
   pull();
   start();
+}
+
+void Container::func(const std::string &action) const {
+  if (action == "update")
+    update();
+  else if (action == "start")
+    start();
+  else if (action == "stop")
+    stop();
+  else if (action == "restart")
+    restart();
+  else if (action == "pull")
+    pull();
+  else
+    std::cerr << "Invalid function " << action << " passed to container "
+              << name << "\n";
 }
