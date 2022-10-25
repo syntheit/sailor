@@ -9,7 +9,7 @@
 #include <unistd.h>
 #include <vector>
 
-#include "Container.h"
+#include "Container.hpp"
 
 using json = nlohmann::json;
 
@@ -17,6 +17,10 @@ using json = nlohmann::json;
 
 std::vector<std::string> split(const std::string &line);
 std::string erase_all(const std::string &s, const char charToRemove);
+void containerAction(const std::string &containerName,
+                     const std::string &actionName, const std::string &action,
+                     int containerNameCount, Container c);
+bool isValidContainerCommand(std::string &command);
 
 int main(int argc, char *argv[]) {
   std::map<std::string, std::string> flags;
@@ -54,9 +58,9 @@ int main(int argc, char *argv[]) {
       if (key == "container_name")
         c.setName(value);
       else if (key == "compose_dir")
-        c.setComposeDir(value);
+        c.setComposeDir(value); // make sure that directory exists
       else if (key == "compose_file_name")
-        c.setComposeFilename(value);
+        c.setComposeFilename(value); // check that file exists
       else if (key == "dir_name")
         c.setDirName(value);
     }
@@ -64,63 +68,103 @@ int main(int argc, char *argv[]) {
     containers.insert(std::pair<std::string, Container>(c.getName(), c));
   }
 
+  // if there's a container and only one argument, assume the arg is the
+  // container name
+
   // sailor update -c <container_name>
-  if (command == "update") {
+
+  // sailor ls to list all containers
+
+  // command to add cron job to schedule actions
+  // for all or individual containers
+
+  // option to enable logging to a file
+  // (is there an XDG standard on where to log, like /var/log/something)
+
+  // add ability to check a container's status
+
+  // add ls -a option to show full path (and status?)
+  if (command == "ls" && flags.size() == 0) {
+    std::map<std::string, Container>::iterator it;
+    for (it = containers.begin(); it != containers.end(); ++it)
+      std::cout << it->first << "\n";
+  } else if (command == "ls" && flags.count("a") == 1) {
+    std::map<std::string, Container>::iterator it;
+    for (it = containers.begin(); it != containers.end(); ++it)
+      std::cout << it->first << " : " << it->second.getPath() << "\n";
+  } else if (command == "ls" && (flags.size() > 1 || flags.count("a") != 1)) {
+    std::cerr << "Unexpected argument given\n";
+  } else if (command == "update" && flags.count("c") == 1) {
     std::string containerName = flags.at("c");
-    if (containers.count(containerName) == 1) {
-      std::cout << "Updating " << flags.at("c") << "\n";
-      containers.at(containerName).update();
-    } else if (containers.count(containerName) <= 0)
-      std::cout << "Container " << containerName
-                << " is not configured.  Check sailor.json";
-    else if (containers.count(containerName) > 1)
-      std::cout << "Container name " << containerName
-                << " has duplicates.  Check sailor.json";
-  } else if (command == "start") {
+    containerAction(containerName, "Updating", "update",
+                    containers.count(containerName),
+                    containers.at(containerName));
+  } else if (command == "start" && flags.count("c") == 1) {
     std::string containerName = flags.at("c");
-    if (containers.count(containerName) == 1) {
-      std::cout << "Starting " << flags.at("c") << "\n";
-      containers.at(containerName).start();
-    } else if (containers.count(containerName) <= 0)
-      std::cout << "Container " << containerName
-                << " is not configured.  Check sailor.json";
-    else if (containers.count(containerName) > 1)
-      std::cout << "Container name " << containerName
-                << " has duplicates.  Check sailor.json";
-  } else if (command == "stop") {
+    containerAction(containerName, "Starting", "start",
+                    containers.count(containerName),
+                    containers.at(containerName));
+  } else if (command == "stop" && flags.count("c") == 1) {
     std::string containerName = flags.at("c");
-    if (containers.count(containerName) == 1) {
-      std::cout << "Stopping " << flags.at("c") << "\n";
-      containers.at(containerName).stop();
-    } else if (containers.count(containerName) <= 0)
-      std::cout << "Container " << containerName
-                << " is not configured.  Check sailor.json";
-    else if (containers.count(containerName) > 1)
-      std::cout << "Container name " << containerName
-                << " has duplicates.  Check sailor.json";
-  } else if (command == "restart") {
+    containerAction(containerName, "Stopping", "stop",
+                    containers.count(containerName),
+                    containers.at(containerName));
+  } else if (command == "restart" && flags.count("c") == 1) {
     std::string containerName = flags.at("c");
-    if (containers.count(containerName) == 1) {
-      std::cout << "Restart " << flags.at("c") << "\n";
-      containers.at(containerName).restart();
-    } else if (containers.count(containerName) <= 0)
-      std::cout << "Container " << containerName
-                << " is not configured.  Check sailor.json";
-    else if (containers.count(containerName) > 1)
-      std::cout << "Container name " << containerName
-                << " has duplicates.  Check sailor.json";
-  } else if (command == "pull") {
+    containerAction(containerName, "Restarting", "restart",
+                    containers.count(containerName),
+                    containers.at(containerName));
+  } else if (command == "pull" && flags.count("c") == 1) {
     // the container probably needs to be off before a pull
     std::string containerName = flags.at("c");
-    if (containers.count(containerName) == 1) {
-      std::cout << "Pulling " << flags.at("c") << "\n";
-      containers.at(containerName).pull();
-    } else if (containers.count(containerName) <= 0)
-      std::cout << "Container " << containerName
-                << " is not configured.  Check sailor.json";
-    else if (containers.count(containerName) > 1)
-      std::cout << "Container name " << containerName
-                << " has duplicates.  Check sailor.json";
+    containerAction(containerName, "Pulling", "pull",
+                    containers.count(containerName),
+                    containers.at(containerName));
+  } else if (command == "update" && flags.count("a") == 1) {
+    // the container probably needs to be off before a pull
+    std::cout << "Updating all " << containers.size() << " containers\n";
+    std::map<std::string, Container>::iterator it;
+    for (it = containers.begin(); it != containers.end(); ++it) {
+      std::string containerName = it->first;
+      containerAction(containerName, "Updating", "update",
+                      containers.count(containerName), it->second);
+    }
+  } else if (command == "start" && flags.count("a") == 1) {
+    std::cout << "Starting all " << containers.size() << " containers\n";
+    std::map<std::string, Container>::iterator it;
+    for (it = containers.begin(); it != containers.end(); ++it) {
+      std::string containerName = it->first;
+      containerAction(containerName, "Starting", "start",
+                      containers.count(containerName), it->second);
+    }
+  } else if (command == "stop" && flags.count("a") == 1) {
+    std::cout << "Stopping all " << containers.size() << " containers\n";
+    std::map<std::string, Container>::iterator it;
+    for (it = containers.begin(); it != containers.end(); ++it) {
+      std::string containerName = it->first;
+      containerAction(containerName, "Stopping", "stop",
+                      containers.count(containerName), it->second);
+    }
+  } else if (command == "restart" && flags.count("a") == 1) {
+    std::cout << "Restarting all " << containers.size() << " containers\n";
+    std::map<std::string, Container>::iterator it;
+    for (it = containers.begin(); it != containers.end(); ++it) {
+      std::string containerName = it->first;
+      containerAction(containerName, "Restarting", "restart",
+                      containers.count(containerName), it->second);
+    }
+  } else if (command == "pull" && flags.count("a") == 1) {
+    std::cout << "Pulling all " << containers.size() << " containers\n";
+    std::map<std::string, Container>::iterator it;
+    for (it = containers.begin(); it != containers.end(); ++it) {
+      std::string containerName = it->first;
+      containerAction(containerName, "Pulling", "pull",
+                      containers.count(containerName), it->second);
+    }
+  } else if (isValidContainerCommand(command) && flags.count("c") == 0 &&
+             flags.count("a") == 0) {
+    std::cerr << "No container name was provided.  Please specify the "
+                 "container name with -c <container>\n";
   } else if (command == "debug") {
     std::cout << "Debug output: \n";
     std::cout << "\nConf: \n";
@@ -153,4 +197,23 @@ std::vector<std::string> split(const std::string &line) {
   std::vector<std::string> v = {line.substr(0, equalsLocation),
                                 line.substr(equalsLocation + 1, line.size())};
   return v;
+}
+
+void containerAction(const std::string &containerName,
+                     const std::string &actionName, const std::string &action,
+                     int containerNameCount, Container c) {
+  if (containerNameCount == 1) {
+    std::cout << actionName << " " << c.getName() << "\n";
+    c.func(action);
+  } else if (containerNameCount <= 0)
+    std::cout << "Container " << containerName
+              << " is not configured.  Check sailor.json";
+  else if (containerNameCount > 1)
+    std::cout << "Container name " << containerName
+              << " has duplicates.  Check sailor.json";
+}
+
+bool isValidContainerCommand(std::string &command) {
+  return command == "update" || command == "start" || command == "stop" ||
+         command == "restart" || command == "pull";
 }
