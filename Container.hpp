@@ -28,6 +28,7 @@ public:
   void restart() const;
   void pull() const;
   void update() const;
+  void func(const std::string &action) const;
 
 private:
   std::string name;
