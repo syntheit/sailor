@@ -23,6 +23,8 @@ void containerAction(const std::string &containerName,
 bool isValidContainerCommand(std::string &command);
 
 int main(int argc, char *argv[]) {
+
+  std::string version = "v0.1.4";
   std::map<std::string, std::string> flags;
   std::map<std::string, std::string> conf;
   std::map<std::string, Container> containers;
@@ -83,6 +85,15 @@ int main(int argc, char *argv[]) {
 
   // add ability to check a container's status
 
+  // add docs on how to install sailor using the binary
+  // add check-update command to update sailor
+
+  // add quick-update command to update a container only if there's a newer
+  // version available to pull (this might mean going into the docker-compose
+  // files themeslves and checking the versions of those images)
+
+  // add version command
+
   // add ls -a option to show full path (and status?)
   if (command == "ls" && flags.size() == 0) {
     std::map<std::string, Container>::iterator it;
@@ -94,6 +105,8 @@ int main(int argc, char *argv[]) {
       std::cout << it->first << " : " << it->second.getPath() << "\n";
   } else if (command == "ls" && (flags.size() > 1 || flags.count("a") != 1)) {
     std::cerr << "Unexpected argument given\n";
+  } else if (command == "--version" || command == "--v") {
+    std::cout << "Sailor " << version << "\n";
   } else if (command == "update" && flags.count("c") == 1) {
     std::string containerName = flags.at("c");
     containerAction(containerName, "Updating", "update",
