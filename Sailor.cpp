@@ -274,17 +274,21 @@ void doProgramUpdate() {
     // check if curl is installed, though
 
     // decide whether or not to use sudo
+    int exitStatus = raymii::Command::exec("[ -w " + sailorBinDir).exitstatus;
+    std::string sudoOrNo = exitStatus == 0 ? "" : "sudo";
     std::string command =
+        sudoOrNo +
         "wget -q https://github.com/syntheit/sailor/releases/download/" +
         latestVersion + "/sailor -O " + sailorBinDir + "_new";
     raymii::Command::exec(command);
-    std::string updatePerms = "chmod +x " + sailorBinDir + "_new";
+    std::string updatePerms = sudoOrNo + "chmod +x " + sailorBinDir + "_new";
     raymii::Command::exec(updatePerms);
     // make sure to only delete sailor, check that last six characters are
     // "sailor"
-    std::string deleteOld = "rm " + sailorBinDir;
+    std::string deleteOld = sudoOrNo + "rm " + sailorBinDir;
     raymii::Command::exec(deleteOld);
-    std::string renameNew = "mv " + sailorBinDir + "_new " + sailorBinDir;
+    std::string renameNew =
+        sudoOrNo + "mv " + sailorBinDir + "_new " + sailorBinDir;
     raymii::Command::exec(renameNew);
   }
 }
