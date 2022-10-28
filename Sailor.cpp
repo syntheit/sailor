@@ -15,6 +15,7 @@
 using json = nlohmann::json;
 
 // write tests in bash to make sure everything works as expected
+// don't include the updater when installed via a package manager (have two separate binaries)
 
 std::vector<std::string> split(const std::string &line);
 std::string erase_all(const std::string &s, const char charToRemove);
