@@ -15,7 +15,8 @@
 using json = nlohmann::json;
 
 // write tests in bash to make sure everything works as expected
-// don't include the updater when installed via a package manager (have two separate binaries)
+// don't include the updater when installed via a package manager (have two
+// separate binaries)
 
 std::vector<std::string> split(const std::string &line);
 std::string erase_all(const std::string &s, const char charToRemove);
@@ -26,7 +27,7 @@ bool isValidContainerCommand(std::string &command);
 std::string getLatestVersion();
 void doProgramUpdate();
 
-std::string currentVersion = "v0.1.4";
+std::string currentVersion = "v0.1.5";
 
 int main(int argc, char *argv[]) {
   std::map<std::string, std::string> flags;
@@ -47,7 +48,16 @@ int main(int argc, char *argv[]) {
   std::string confDirectory = getenv("XDG_CONFIG_HOME") == NULL
                                   ? (std::string(getenv("HOME")) + "/.config")
                                   : getenv("XDG_CONFIG_HOME");
-  std::ifstream f(confDirectory + "/sailor/sailor.json");
+  std::string configPath = confDirectory + "/sailor/sailor.json";
+  std::ifstream f(configPath);
+  if (!f) {
+    std::cerr << "Unable to read config file at " << configPath
+              << ".\nMake sure that the file exists and follows the format "
+                 "listed on the ";
+    system("echo -e "
+           "'\e]8;;https://github.com/syntheit/sailor\adocumentation\e]8;;\a'");
+    return 1;
+  }
   // handle parse exception
   json config = json::parse(f);
   json defaults = config["defaults"];
@@ -77,10 +87,6 @@ int main(int argc, char *argv[]) {
   // if there's a container and only one argument, assume the arg is the
   // container name
 
-  // sailor update -c <container_name>
-
-  // sailor ls to list all containers
-
   // command to add cron job to schedule actions
   // for all or individual containers
 
@@ -96,9 +102,7 @@ int main(int argc, char *argv[]) {
   // version available to pull (this might mean going into the docker-compose
   // files themeslves and checking the versions of those images)
 
-  // add version command
-
-  // add ls -a option to show full path (and status?)
+  // add status indicator to ls -a (maybe add some fancy color shit?)
   if (command == "ls" && flags.size() == 0) {
     std::map<std::string, Container>::iterator it;
     for (it = containers.begin(); it != containers.end(); ++it)
@@ -199,10 +203,13 @@ int main(int argc, char *argv[]) {
       std::cout << "compose_filename: " << c.getComposeFilename() << "\n";
       std::cout << "dir_name: " << c.getDirName() << "\n";
       std::cout << "path: " << c.getPath() << "\n\n";
-
-      std::cout << "Latest version: " << getLatestVersion() << "\n";
-      std::cout << "Current version: " << currentVersion << "\n";
     }
+    std::cout << "Latest version: " << getLatestVersion() << "\n";
+    std::cout << "Current version: " << currentVersion << "\n";
+  } else {
+    std::cerr << "Invalid argument\n";
+    // print help
+    return 1;
   }
 
   return 0;
@@ -263,7 +270,7 @@ void doProgramUpdate() {
         std::remove(sailorBinDir.begin(), sailorBinDir.end(), '\n'),
         sailorBinDir.cend());
     // check if sudo is needed
-    // switch to curl because most unix systems will have it by default.  still
+    // switch to curl because most unix systems will have it by default. still
     // check if curl is installed, though
 
     // decide whether or not to use sudo
@@ -273,7 +280,8 @@ void doProgramUpdate() {
     raymii::Command::exec(command);
     std::string updatePerms = "chmod +x " + sailorBinDir + "_new";
     raymii::Command::exec(updatePerms);
-    // make sure to only delete sailor
+    // make sure to only delete sailor, check that last six characters are
+    // "sailor"
     std::string deleteOld = "rm " + sailorBinDir;
     raymii::Command::exec(deleteOld);
     std::string renameNew = "mv " + sailorBinDir + "_new " + sailorBinDir;
