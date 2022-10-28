@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "Container.hpp"
+#include "command.h"
 
 using json = nlohmann::json;
 
@@ -21,10 +22,12 @@ void containerAction(const std::string &containerName,
                      const std::string &actionName, const std::string &action,
                      int containerNameCount, Container c);
 bool isValidContainerCommand(std::string &command);
+std::string getLatestVersion();
+void doProgramUpdate();
+
+std::string currentVersion = "v0.1.4";
 
 int main(int argc, char *argv[]) {
-
-  std::string version = "v0.1.4";
   std::map<std::string, std::string> flags;
   std::map<std::string, std::string> conf;
   std::map<std::string, Container> containers;
@@ -106,7 +109,9 @@ int main(int argc, char *argv[]) {
   } else if (command == "ls" && (flags.size() > 1 || flags.count("a") != 1)) {
     std::cerr << "Unexpected argument given\n";
   } else if (command == "--version" || command == "--v") {
-    std::cout << "Sailor " << version << "\n";
+    std::cout << "Sailor " << currentVersion << "\n";
+  } else if (command == "do-update") {
+    doProgramUpdate();
   } else if (command == "update" && flags.count("c") == 1) {
     std::string containerName = flags.at("c");
     containerAction(containerName, "Updating", "update",
@@ -193,8 +198,13 @@ int main(int argc, char *argv[]) {
       std::cout << "compose_filename: " << c.getComposeFilename() << "\n";
       std::cout << "dir_name: " << c.getDirName() << "\n";
       std::cout << "path: " << c.getPath() << "\n\n";
+
+      std::cout << "Latest version: " << getLatestVersion() << "\n";
+      std::cout << "Current version: " << currentVersion << "\n";
     }
   }
+
+  return 0;
 }
 
 std::string erase_all(const std::string &s, const char charToRemove) {
@@ -229,4 +239,43 @@ void containerAction(const std::string &containerName,
 bool isValidContainerCommand(std::string &command) {
   return command == "update" || command == "start" || command == "stop" ||
          command == "restart" || command == "pull";
+}
+
+std::string getLatestVersion() {
+  // make sure curl is installed
+  std::string command =
+      "curl -s "
+      "https://raw.githubusercontent.com/syntheit/sailor/main/version.txt";
+  // add checks to make sure exit status is 0
+  return raymii::Command::exec(command).output;
+}
+
+void doProgramUpdate() {
+  std::string latestVersion = getLatestVersion();
+  if (latestVersion == currentVersion)
+    std::cout << "Sailor is up-to-date\n";
+  else {
+    std::cout << "Updating to version " << latestVersion << "\n";
+    std::string sailorBinDir =
+        raymii::Command::exec("which sailor").output; // add check
+    sailorBinDir.erase(
+        std::remove(sailorBinDir.begin(), sailorBinDir.end(), '\n'),
+        sailorBinDir.cend());
+    // check if sudo is needed
+    // switch to curl because most unix systems will have it by default.  still
+    // check if curl is installed, though
+
+    // decide whether or not to use sudo
+    std::string command =
+        "wget -q https://github.com/syntheit/sailor/releases/download/" +
+        latestVersion + "/sailor -O " + sailorBinDir + "_new";
+    raymii::Command::exec(command);
+    std::string updatePerms = "chmod +x " + sailorBinDir + "_new";
+    raymii::Command::exec(updatePerms);
+    // make sure to only delete sailor
+    std::string deleteOld = "rm " + sailorBinDir;
+    raymii::Command::exec(deleteOld);
+    std::string renameNew = "mv " + sailorBinDir + "_new " + sailorBinDir;
+    raymii::Command::exec(renameNew);
+  }
 }
